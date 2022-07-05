@@ -6,13 +6,13 @@ import (
 	"testing"
 )
 
-func TestDomainError(t *testing.T) {
+func TestError(t *testing.T) {
 	text := "test message"
 	text2 := "test message 2"
 	inner := errors.New("inner error message")
-	err := New(text, WithError(inner), WithCaller(), WithStacktrace())
+	err := New(text, WithInner(inner), WithCaller(), WithStacktrace())
 
-	err = New(text2, WithError(err))
+	err = New(text2, WithInner(err))
 
 	err = fmt.Errorf("wrapped err: %w", err)
 

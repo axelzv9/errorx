@@ -1,6 +1,7 @@
 package errorx
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"runtime"
@@ -39,6 +40,21 @@ func (e errorx) Inner() error    { return e.inner }
 func (e errorx) Fields() []Field { return e.fields }
 func (e errorx) Type() Type      { return e.typ }
 
+func (e errorx) JSONString() (string, error) {
+	fields := map[string]string{}
+	if inner := e.inner; inner != nil {
+		fields["inner"] = inner.Error()
+	}
+	for _, field := range e.fields {
+		fields[field.Key] = field.Value
+	}
+	b, err := json.Marshal(fields)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
 type Field struct {
 	Key, Value string
 }
@@ -47,7 +63,7 @@ type Type int
 
 type Option func(*errorx)
 
-func WithError(err error) Option {
+func WithInner(err error) Option {
 	return func(e *errorx) {
 		var ext *errorx
 		if errors.As(err, &ext) {
