@@ -11,13 +11,15 @@ import (
 )
 
 func New(text string, opts ...Option) error {
-	err := &errorx{
-		text: text,
-	}
+	return Wrap(errors.New(text), opts...)
+}
+
+func Wrap(err error, opts ...Option) error {
+	errx := &errorx{inner: err}
 	for _, opt := range opts {
-		opt(err)
+		opt(errx)
 	}
-	return err
+	return errx
 }
 
 func AsError(err error) *errorx {
@@ -29,21 +31,24 @@ func AsError(err error) *errorx {
 }
 
 type errorx struct {
-	text   string
-	inner  error
-	fields []Field
-	typ    Type
+	inner    error
+	internal error
+	fields   []Field
+	typ      Type
 }
 
-func (e errorx) Error() string   { return e.text }
-func (e errorx) Inner() error    { return e.inner }
+func (e errorx) Error() string   { return e.inner.Error() }
+func (e errorx) Internal() error { return e.internal }
 func (e errorx) Fields() []Field { return e.fields }
 func (e errorx) Type() Type      { return e.typ }
 
+// Deprecated: use Internal instead
+func (e errorx) Inner() error { return e.internal }
+
 func (e errorx) JSONString() (string, error) {
 	fields := map[string]string{}
-	if inner := e.inner; inner != nil {
-		fields["inner"] = inner.Error()
+	if internal := e.internal; internal != nil {
+		fields["internal"] = internal.Error()
 	}
 	for _, field := range e.fields {
 		fields[field.Key] = field.Value
@@ -63,20 +68,25 @@ type Type int
 
 type Option func(*errorx)
 
-func WithInner(err error) Option {
+func WithInternal(err error) Option {
 	return func(e *errorx) {
-		var ext *errorx
-		if errors.As(err, &ext) {
-			e.fields = append(e.fields, ext.fields...)
-			if inner := ext.Inner(); inner != nil {
-				e.inner = inner
+		var errx *errorx
+		if errors.As(err, &errx) {
+			e.fields = append(e.fields, errx.fields...)
+			if internal := errx.Internal(); internal != nil {
+				e.internal = internal
 				return
 			}
-			e.inner = errors.New(ext.text)
+			e.internal = errx.internal
 			return
 		}
-		e.inner = err
+		e.internal = err
 	}
+}
+
+// Deprecated: use WithInternal instead
+func WithInner(err error) Option {
+	return WithInternal(err)
 }
 
 func WithAny(key string, value any) Option {

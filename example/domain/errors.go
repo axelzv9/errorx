@@ -23,14 +23,14 @@ func WrapDBError(err error, opts ...errorx.Option) error {
 		opts = append(
 			append(
 				make([]errorx.Option, 0, 2+len(opts)),
-				errorx.WithInner(err), // wrapping real db error
-				errorx.WithCaller(1),  // save the line of code where the error occurred
+				errorx.WithInternal(err), // wrapping real db error
+				errorx.WithCaller(1),     // save the line of code where the error occurred
 			),
 			opts...,
 		)
 		return errorx.New(databaseErrorText, opts...)
 	}
-	return errorx.New(databaseErrorText, errorx.WithInner(err), errorx.WithCaller(1))
+	return errorx.New(databaseErrorText, errorx.WithInternal(err), errorx.WithCaller(1))
 }
 
 func NewErrUnauthorized() error {
@@ -38,5 +38,5 @@ func NewErrUnauthorized() error {
 }
 
 func NewErrInvalidParams(err error) error {
-	return errorx.New(invalidParamsErrorText, errorx.WithType(TypeInvalidParams), errorx.WithInner(err))
+	return errorx.New(invalidParamsErrorText, errorx.WithType(TypeInvalidParams), errorx.WithInternal(err))
 }
